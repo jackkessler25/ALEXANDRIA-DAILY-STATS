@@ -1,0 +1,38 @@
+name: Alexandria Daily Report
+
+on:
+  schedule:
+    - cron: '0 3 * * *'   # 9 PM MT (UTC-6) = 3 AM UTC — change to taste
+  workflow_dispatch:       # lets you also trigger it manually from GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Generate HTML
+        run: python generate.py
+        env:
+          SIGMA_CLIENT_ID:     ${{ secrets.SIGMA_CLIENT_ID }}
+          SIGMA_CLIENT_SECRET: ${{ secrets.SIGMA_CLIENT_SECRET }}
+
+      - name: Commit and push
+        run: |
+          git config user.name  "Alexandria Bot"
+          git config user.email "bot@alexandria"
+          git add index.html
+          git diff --staged --quiet || git commit -m "Daily report $(date +'%Y-%m-%d')"
+          git push
